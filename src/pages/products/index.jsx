@@ -65,7 +65,7 @@ export const getServerSideProps = serverSidePropsFunction
 
 
 const Products = ({ title, description, keywords, schemaMarkup, ogImage,favicon }) => {
-  const pageUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/products`;
+  const pageUrl = `${process.env.NEXT_PUBLIC_BASE_URL}  /products`;
 
   return (
     <>

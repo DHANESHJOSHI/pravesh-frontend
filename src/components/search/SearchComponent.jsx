@@ -32,7 +32,7 @@ const SearchComponent = ({ isMobile, mobileSearch, setMobileSearch, handleSearch
 
         try {
             const categories = await api.getCategories()
-            setCategories(categories.data)
+            setCategories(categories.data.categories)
         } catch (error) {
             console.log("erorr", error)
         }
@@ -46,17 +46,42 @@ const SearchComponent = ({ isMobile, mobileSearch, setMobileSearch, handleSearch
     return (
         <>
             <div className={`flex w-full  h-full flex-col px-4 py-2 items-center md:flex-row md:headerSearch  md:rounded-[5px] md:ml-[10px]  md:p-0`}>
-                <Select dir={rtl ? "rtl" : "ltr"} value={filter?.searchedCategory} onValueChange={(value) => handleSearchCategory(value)}>
-                    <SelectTrigger className={`w-full h-full buttonBackground cardBorder  focus:ring-0 rounded-t-sm rounded-b-none md:rounded-l-sm md:rounded-r-none md:w-[152px] md:border-none md:min-w-[152px]`}>
+                <Select
+                    dir={rtl ? "rtl" : "ltr"}
+                    value={filter?.searchedCategory}
+                    onValueChange={(value) => handleSearchCategory(value)}
+                >
+                    <SelectTrigger className="w-full h-full buttonBackground cardBorder focus:ring-0 rounded-t-sm rounded-b-none md:rounded-l-sm md:rounded-r-none md:w-[152px] md:border-none md:min-w-[152px]">
                         <SelectValue placeholder={t("all_categories")} />
                     </SelectTrigger>
+
                     <SelectContent className="w-full h-full z-50 md:w-[152px]">
-                        <SelectItem value="all categories">{t("all_categories")}</SelectItem>
+                        <SelectItem value="all categories">
+                            {t("all_categories")}
+                        </SelectItem>
+
                         {categories?.map((category) => (
-                            <SelectItem key={category?.id} value={`${category?.id}`}>{category?.name}</SelectItem>
+                            <React.Fragment key={category.id}>
+                                <SelectItem value={`${category.id}`}>
+                                    {category.title}
+                                </SelectItem>
+
+                                {category.children?.length > 0 &&
+                                    category.children.map((subCategory) => (
+                                        <SelectItem
+                                            key={subCategory.id}
+                                            value={`${subCategory.id}`}
+                                            className="pl-6 opacity-80"
+                                        >
+                                            {subCategory.title}
+                                        </SelectItem>
+                                    ))
+                                }
+                            </React.Fragment>
                         ))}
                     </SelectContent>
                 </Select>
+
                 <div className='w-full flex flex-col flex-grow md:relative md:flex-row md:h-full'>
                     <input
                         type="text"

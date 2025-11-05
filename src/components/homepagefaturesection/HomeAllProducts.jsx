@@ -70,17 +70,18 @@ const HomeAllProducts = () => {
                     filters: { limit: totalProductsPerPage, offset: localOffset }
                 });
 
-                if (response.status == 1) {
+                // FIXED: Use the correct response structure
+                if (response && response.products) {
                     setTotalProducts(response.total)
 
                     if (isFetchMore) {
-                        setAllProducts((products) => [...products, ...response.data])
+                        setAllProducts((products) => [...products, ...response.products])
                     } else {
-                        setAllProducts(response.data)
+                        setAllProducts(response.products)
                     }
 
                     // Check if we've loaded all available products
-                    setHasMore(localOffset + response.data.length < response.total)
+                    setHasMore(localOffset + response.products.length < response.total)
                     setLoading(false)
                     setLoadmoreLoading(false)
                 } else {
@@ -122,7 +123,7 @@ const HomeAllProducts = () => {
                                         return (
                                             <div
                                                 ref={lastProductRef}
-                                                key={product?.id}
+                                                key={product?._id} // Changed to _id
                                                 className='col-span-6 sm:col-span-6 md:col-span-4 lg:col-span-3 xl:col-span-3 2xl:col-span-2'
                                             >
                                                 <VerticleProductCard product={product} />
@@ -131,7 +132,7 @@ const HomeAllProducts = () => {
                                     } else {
                                         return (
                                             <div
-                                                key={product?.id}
+                                                key={product?._id} // Changed to _id
                                                 className='col-span-6 sm:col-span-6 md:col-span-4 lg:col-span-3 xl:col-span-3 2xl:col-span-2'
                                             >
                                                 <VerticleProductCard product={product} />

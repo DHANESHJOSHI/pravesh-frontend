@@ -32,18 +32,16 @@ const VerticleProductCard = ({ product, largeImage = false }) => {
     const [showSingleSellerModal, setSingleSellerModal] = useState(false)
 
     useEffect(() => {
-        const inStockVariant = product?.variants?.find((variant) => variant?.is_unlimited_stock === 0 && variant?.stock > 0)
-        if (inStockVariant == undefined) {
-            setSelectedVariant(product?.variants?.[0])
-        } else {
-            setSelectedVariant(inStockVariant)
-        }
-    }, [])
+        // Since your API doesn't have variants, use the product itself as the variant
+        setSelectedVariant(product)
+    }, [product])
+
     const calculateDiscount = (discountPrice, actualPrice) => {
         const difference = actualPrice - discountPrice;
         const actualDiscountPrice = (difference / actualPrice)
         return actualDiscountPrice * 100;
     }
+
     const getProductQuantities = (products) => {
         return Object.entries(products?.reduce((quantities, product) => {
             const existingQty = quantities[product.product_id] || 0;
@@ -53,6 +51,7 @@ const VerticleProductCard = ({ product, largeImage = false }) => {
             qty
         }));
     }
+
     // cart functionality
     const addToCart = async (productId, productVId, qty) => {
         try {
@@ -86,6 +85,7 @@ const VerticleProductCard = ({ product, largeImage = false }) => {
             console.log("error", error)
         }
     }
+
     const removeFromCart = async (productId, variantId) => {
         try {
             const response = await api.removeFromCart({ product_id: productId, product_variant_id: variantId })
@@ -100,8 +100,9 @@ const VerticleProductCard = ({ product, largeImage = false }) => {
             console.log("error", error)
         }
     }
+
     const AddToGuestCart = (product, productId, productVariantId, Qty, isExisting, flag) => {
-        const finalPrice = selectedVariant?.discounted_price !== 0 ? selectedVariant?.discounted_price : selectedVariant?.price
+        const finalPrice = product?.finalPrice || product?.originalPrice
         if (isExisting) {
             let updatedProducts;
             if (Qty !== 0) {
@@ -114,7 +115,6 @@ const VerticleProductCard = ({ product, largeImage = false }) => {
                     if (product?.product_id == productId && product?.product_variant_id == productVariantId) {
                         return { ...product, qty: Qty };
                     } else {
-                        // dispatch(addGuestCartTotal({ data: finalPrice }));
                         return product;
                     }
                 });
@@ -135,67 +135,66 @@ const VerticleProductCard = ({ product, largeImage = false }) => {
             } else if (flag == "remove") {
                 dispatch(subGuestCartTotal({ data: finalPrice }));
             }
-            // dispatch(addGuestCartTotal({ data: finalPrice }))
             const productData = { product_id: productId, product_variant_id: productVariantId, qty: Qty, productPrice: finalPrice };
             dispatch(addtoGuestCart({ data: [...cart?.guestCart, productData] }));
         }
     };
+
     const handleValidateAddExistingGuestProduct = (productQuantity, product, quantity) => {
-        const productQty = productQuantity?.find(prdct => prdct?.product_id == product?.id)?.qty;
+        const productQty = productQuantity?.find(prdct => prdct?.product_id == product?._id)?.qty;
 
         if (Number(product.is_unlimited_stock !== 0)) {
-
             if (productQty >= Number(product?.total_allowed_quantity)) {
                 toast.error(t("max_cart_limit_error"));
             }
             else {
-                AddToGuestCart(product, product?.id, selectedVariant?.id, quantity, 1, "add");
+                AddToGuestCart(product, product?._id, product?._id, quantity, 1, "add");
             }
         }
         else {
-            if (productQty >= Number(selectedVariant?.stock)) {
+            if (productQty >= Number(product?.stock)) {
                 toast.error(t("out_of_stock_message"));
             }
             else if (productQty >= Number(product?.total_allowed_quantity)) {
                 toast.error(t("max_cart_limit_error"));
             }
             else {
-                AddToGuestCart(product, product?.id, selectedVariant?.id, quantity, 1, "add");
+                AddToGuestCart(product, product?._id, product?._id, quantity, 1, "add");
             }
         }
     };
+
     const handleAddNewProductGuest = (productQuantity, product) => {
-        const productQty = productQuantity?.find(prdct => prdct?.product_id == product?.id)?.qty
-        if (selectedVariant?.is_unlimited_stock == 0 && selectedVariant?.stock == 0) {
+        const productQty = productQuantity?.find(prdct => prdct?.product_id == product?._id)?.qty
+        if (product?.stock == 0) {
             toast.error(t("out_of_stock_message"));
         }
-        else if (Number(productQty || 0) < Number(product.total_allowed_quantity)) {
-            AddToGuestCart(product, product.id, selectedVariant?.id, 1, 0, "add");
+        else if (Number(productQty || 0) < Number(product.total_allowed_quantity || 99)) {
+            AddToGuestCart(product, product._id, product?._id, 1, 0, "add");
         } else {
             toast.error(t("out_of_stock_message"));
         }
     };
+
     const handleValidateAddNewProduct = (productQuantity, product) => {
-        const productQty = productQuantity?.find(prdct => prdct?.product_id == product?.id)?.qty
+        const productQty = productQuantity?.find(prdct => prdct?.product_id == product?._id)?.qty
 
-        if ((productQty || 0) >= Number(product?.total_allowed_quantity)) {
-
+        if ((productQty || 0) >= Number(product?.total_allowed_quantity || 99)) {
             toast.error(t("out_of_stock_message"));
-        } else if (selectedVariant?.is_unlimited_stock == 0 && selectedVariant?.stock <= 0) {
+        } else if (product?.stock <= 0) {
             toast.error(t("out_of_stock_message"));
         }
         else if (Number(product.is_unlimited_stock)) {
-            addToCart(product.id, selectedVariant.id, 1);
+            addToCart(product._id, product._id, 1);
         } else {
-            if (selectedVariant?.status) {
-                addToCart(product.id, selectedVariant?.id, 1);
+            if (product?.stockStatus === "in_stock") {
+                addToCart(product._id, product?._id, 1);
             } else {
-
                 toast.error(t("out_of_stock_message"));
             }
         }
-
     };
+
     const handleIntialAddToCart = (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -207,25 +206,27 @@ const VerticleProductCard = ({ product, largeImage = false }) => {
             handleValidateAddNewProduct(quantity, product)
         }
     }
+
     const handleValidateAddExistingProduct = (productQuantity, product) => {
-        const productQty = productQuantity?.find(prdct => prdct?.product_id == product?.id)?.qty
+        const productQty = productQuantity?.find(prdct => prdct?.product_id == product?._id)?.qty
         if (Number(product.is_unlimited_stock)) {
-            if (productQty < Number(product?.total_allowed_quantity)) {
-                addToCart(product.id, selectedVariant?.id, cart?.cartProducts?.find(prdct => prdct?.product_variant_id == selectedVariant?.id)?.qty + 1);
+            if (productQty < Number(product?.total_allowed_quantity || 99)) {
+                addToCart(product._id, product?._id, cart?.cartProducts?.find(prdct => prdct?.product_variant_id == product?._id)?.qty + 1);
             } else {
                 toast.error(t("max_cart_limit_error"))
             }
         } else {
-            if (productQty >= Number(selectedVariant.stock)) {
+            if (productQty >= Number(product.stock)) {
                 toast.error(t("out_of_stock_message"));
             }
-            else if (Number(productQty) >= Number(product.total_allowed_quantity)) {
+            else if (Number(productQty) >= Number(product.total_allowed_quantity || 99)) {
                 toast.error(t("max_cart_limit_error"))
             } else {
-                addToCart(product.id, selectedVariant?.id, cart?.cartProducts?.find(prdct => prdct?.product_variant_id == selectedVariant?.id)?.qty + 1);
+                addToCart(product._id, product?._id, cart?.cartProducts?.find(prdct => prdct?.product_variant_id == product?._id)?.qty + 1);
             }
         }
     };
+
     const handleQuantityIncrease = (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -234,42 +235,42 @@ const VerticleProductCard = ({ product, largeImage = false }) => {
             handleValidateAddExistingGuestProduct(
                 productQuantity,
                 product,
-                cart?.guestCart?.find(prdct => prdct?.product_id == product?.id && prdct?.product_variant_id == selectedVariant?.id)?.qty + 1
+                cart?.guestCart?.find(prdct => prdct?.product_id == product?._id && prdct?.product_variant_id == product?._id)?.qty + 1
             )
         } else {
             const quantity = getProductQuantities(cart?.cartProducts)
             handleValidateAddExistingProduct(quantity, product)
         }
     }
+
     const handleQuantityDecrease = (e) => {
         e.preventDefault();
         e.stopPropagation();
         if (cart?.isGuest) {
             AddToGuestCart(
                 product,
-                product?.id,
-                selectedVariant?.id,
-                cart?.guestCart?.find((prdct) => prdct?.product_variant_id == selectedVariant?.id)?.qty - 1,
+                product?._id,
+                product?._id,
+                cart?.guestCart?.find((prdct) => prdct?.product_variant_id == product?._id)?.qty - 1,
                 1,
                 "remove"
             );
         } else {
-            if (cart?.cartProducts?.find((prdct) => prdct?.product_variant_id == selectedVariant?.id).qty == 1) {
-                removeFromCart(product?.id, selectedVariant?.id)
+            if (cart?.cartProducts?.find((prdct) => prdct?.product_variant_id == product?._id)?.qty == 1) {
+                removeFromCart(product?._id, product?._id)
             } else {
-                addToCart(product.id, selectedVariant.id, cart?.cartProducts?.find(prdct => prdct?.product_variant_id == selectedVariant?.id)?.qty - 1);
+                addToCart(product._id, product._id, cart?.cartProducts?.find(prdct => prdct?.product_variant_id == product?._id)?.qty - 1);
             }
         }
     }
+
     const handleShowVariantModal = (e, product) => {
         e.preventDefault()
         e.stopPropagation()
-        if (product.variants.length > 1) {
-            setShowVariants(true)
-        } else {
-            return
-        }
+        // Since your API doesn't have variants, don't show variant modal
+        // setShowVariants(true)
     }
+
     const handleShowDetailModal = (e) => {
         e.preventDefault()
         e.stopPropagation()
@@ -279,22 +280,22 @@ const VerticleProductCard = ({ product, largeImage = false }) => {
     const handleProductLikes = async (e) => {
         e.preventDefault();
         e.stopPropagation();
-        const isAlreadyLikes = favoriteProducts?.includes(product?.id)
+        const isAlreadyLikes = favoriteProducts?.includes(product?._id)
         try {
             if (user?.jwtToken) {
                 if (!isAlreadyLikes) {
-                    const response = await api.addToFavorite({ product_id: product?.id })
+                    const response = await api.addToFavorite({ product_id: product?._id })
                     if (response.status == 1) {
-                        const updatedFavProducts = [...favoriteProducts, product?.id]
+                        const updatedFavProducts = [...favoriteProducts, product?._id]
                         dispatch(setFavoriteProductIds({ data: updatedFavProducts }))
                         toast.success(response.message)
                     } else {
                         toast.error(response.message)
                     }
                 } else {
-                    const response = await api.removeFromFavorite({ product_id: product?.id })
+                    const response = await api.removeFromFavorite({ product_id: product?._id })
                     if (response.status == 1) {
-                        const updatedFavProducts = favoriteProducts?.filter((prdctId) => prdctId != product?.id)
+                        const updatedFavProducts = favoriteProducts?.filter((prdctId) => prdctId != product?._id)
                         dispatch(setFavoriteProductIds({ data: updatedFavProducts }))
                         toast.success(response.message)
                     } else {
@@ -304,41 +305,41 @@ const VerticleProductCard = ({ product, largeImage = false }) => {
             } else {
                 toast.error(t("required_login_message_for_wishlist"))
             }
-
         } catch (error) {
             console.log("Error", error)
         }
     }
 
-    const productsVariants = product.variants
+    // Since your API doesn't have variants, use empty array
+    const productsVariants = []
 
-
-    const isProductAlreadyAdded = ((cart?.isGuest === false && cart?.cartProducts?.find((prdct) => prdct?.product_variant_id == selectedVariant?.id)?.qty > 0) ||
-        (cart?.isGuest === true && cart?.guestCart?.find((prdct) => prdct?.product_variant_id === selectedVariant?.id)?.qty > 0))
+    const isProductAlreadyAdded = ((cart?.isGuest === false && cart?.cartProducts?.find((prdct) => prdct?.product_variant_id == product?._id)?.qty > 0) ||
+        (cart?.isGuest === true && cart?.guestCart?.find((prdct) => prdct?.product_variant_id === product?._id)?.qty > 0))
 
     const addedQuantity = cart.isGuest === false ?
-        cart?.cartProducts?.find(prdct => prdct?.product_variant_id == selectedVariant?.id)?.qty
-        : cart?.guestCart?.find(prdct => prdct?.product_variant_id == selectedVariant?.id)?.qty
+        cart?.cartProducts?.find(prdct => prdct?.product_variant_id == product?._id)?.qty
+        : cart?.guestCart?.find(prdct => prdct?.product_variant_id == product?._id)?.qty
 
-    const isProductAvailabel = ((product?.variants?.length <= 1 && product?.variants?.[0]?.is_unlimited_stock == 0 && product?.variants?.[0]?.stock == 0) || (selectedVariant?.stock <= 0 && selectedVariant?.is_unlimited_stock == 0) || (product?.variants?.length <= 1 && product?.variants?.[0]?.status == 0))
+    const isProductAvailabel = (product?.stock <= 0 && product?.stockStatus === "out_of_stock")
+
     return (
         <div>
             <Link href={`/product/${product?.slug}`} className='flex flex-col p-2 cardBorder group  headerBackgroundColor textColor cardBorder hover:shadow-lg [.image-card_&]:rounded-none [.cardBorder_&]:rounded-none rounded-md'>
                 <div className='flex relative textColor'>
                     <div className='relative aspect-square w-full h-48 [.verticle-card_&]:h-44 [.image-card_&]:h-64 [.verticle-card_&]:md:h-72'>
-                        <ImageWithPlaceholder className='rounded-lg object-cover h-full w-full' alt={product.name} src={product.image_url} />
-                        {selectedVariant?.discounted_price !== 0 && selectedVariant?.discounted_price !== selectedVariant?.price ? <span className="bg-[#db3d26] rounded-[4px] text-white text-[14px] font-medium left-0 leading-[16px] px-2 py-1 absolute text-center uppercase top-0">
-                            {calculateDiscount(selectedVariant?.discounted_price, selectedVariant?.price).toFixed(2)}% {t("off")}
+                        <ImageWithPlaceholder className='rounded-lg object-cover h-full w-full' alt={product.name} src={product.thumbnail} />
+                        {product?.discountValue > 0 && product?.finalPrice !== product?.originalPrice ? <span className="bg-[#db3d26] rounded-[4px] text-white text-[14px] font-medium left-0 leading-[16px] px-2 py-1 absolute text-center uppercase top-0">
+                            {calculateDiscount(product?.finalPrice, product?.originalPrice).toFixed(2)}% {t("off")}
                         </span> : null}
                         <ul className="absolute right-3 top-5 flex flex-col gap-2 translate-x-3 group-hover:translate-x-0 opacity-0 group-hover:opacity-100 transition-all duration-500 ease-in-out">
-                            <li className='buttonBorder hover:primaryBorder hover:primaryColor rounded-full h-[30px] w-[30px] flex justify-center items-center bodyBackgroundColor' onClick={handleProductLikes}><span>{favoriteProducts && favoriteProducts?.includes(product?.id) ? <BiSolidHeart size={20} className='primaryFilledColor' /> : <BiHeart size={20} />}</span></li>
+                            <li className='buttonBorder hover:primaryBorder hover:primaryColor rounded-full h-[30px] w-[30px] flex justify-center items-center bodyBackgroundColor' onClick={handleProductLikes}><span>{favoriteProducts && favoriteProducts?.includes(product?._id) ? <BiSolidHeart size={20} className='primaryFilledColor' /> : <BiHeart size={20} />}</span></li>
                             <li className='buttonBorder hover:primaryBorder hover:primaryColor rounded-full h-[30px] w-[30px] flex justify-center items-center bodyBackgroundColor'><div onClick={handleShowDetailModal} ><GoEye size={20} /></div></li>
                         </ul>
                     </div>
                 </div>
                 <div className='h-[100px] flex flex-col justify-between '>
                     <h3 className="flex textColor text-[16px] font-bold leading-[1.2] mt-3 max-h-[2.4em] overflow-hidden text-ellipsis capitalize w-full group-hover:primaryColor py-[2px]">{product?.name}</h3>
-                    {product?.average_rating > 0 ?
+                    {product?.rating > 0 ?
                         <div className="rating">
                             <div className="flex">
                                 <div className="flex">
@@ -347,7 +348,7 @@ const VerticleProductCard = ({ product, largeImage = false }) => {
                                             <FaStar
                                                 key={star}
                                                 size={15}
-                                                className={`${star <= parseInt(product?.average_rating)
+                                                className={`${star <= parseInt(product?.rating)
                                                     ? 'fill-yellow-400 text-yellow-400'
                                                     : 'fill-gray-200 text-gray-200'
                                                     }`}
@@ -359,16 +360,21 @@ const VerticleProductCard = ({ product, largeImage = false }) => {
                         </div>
                         : null}
                     <div className='flex'>
-                        {selectedVariant?.discounted_price !== 0 && selectedVariant?.discounted_price !== selectedVariant?.price ? <>  <p className='textColortext-base font-bold'>{setting?.currency}{selectedVariant?.discounted_price}</p>
-                            <p className='textColor text-[14px] font-normal leading-[17px] m-1 line-through'>{setting?.currency}{selectedVariant?.price}</p></> : <p className='textColor text-base font-bold'>{setting?.currency}{selectedVariant?.price}</p>}
+                        {product?.discountValue > 0 && product?.finalPrice !== product?.originalPrice ? <>  
+                            <p className='textColortext-base font-bold'>{setting?.currency}{product?.finalPrice}</p>
+                            <p className='textColor text-[14px] font-normal leading-[17px] m-1 line-through'>{setting?.currency}{product?.originalPrice}</p>
+                        </> : <p className='textColor text-base font-bold'>{setting?.currency}{product?.finalPrice || product?.originalPrice}</p>}
                     </div>
                 </div>
                 {!isProductAvailabel ? <div className='flex gap-0 md:gap-3 h-[80px] md:h-[44px] w-full flex-col md:flex-row'>
-                    <button onClick={(e) => handleShowVariantModal(e, product)} className='md:w-1/2 w-full flex items-center my-[5px] justify-between  rounded-[4px] px-2 py-1.5 md:py-2  buttonBackground text-sm md:text-nowrap' >{`${selectedVariant?.measurement} ${selectedVariant?.stock_unit_name}`}{productsVariants?.length > 1 ? <div><MdArrowDropDown size={16} /></div> : <></>}</button>
+                    <button onClick={(e) => handleShowVariantModal(e, product)} className='md:w-1/2 w-full flex items-center my-[5px] justify-between  rounded-[4px] px-2 py-1.5 md:py-2  buttonBackground text-sm md:text-nowrap' >
+                        {product?.unit || "piece"}
+                        {productsVariants?.length > 1 ? <div><MdArrowDropDown size={16} /></div> : <></>}
+                    </button>
                     {isProductAlreadyAdded ?
                         <div className='md:w-1/2 w-full cardBorder flex justify-between rounded-sm my-1'>
                             <button className=' md:px-0.5 flex items-center justify-center primaryBackColor  text-white font-bold text-sm w-8  h-[34px] rounded-[2px]' onClick={handleQuantityDecrease}><FaMinus /></button>
-                            <input value={addedQuantity} disabled className='w-1/2  text-center' min={"1"} max={selectedVariant?.stock} />
+                            <input value={addedQuantity} disabled className='w-1/2  text-center' min={"1"} max={product?.stock} />
                             <button className=' flex items-center justify-center font-bold text-sm  md:p-1 primaryBackColor text-white w-8  rounded-[2px] h-[34px] ' onClick={handleQuantityIncrease}><FaPlus /></button>
                         </div>
                         : <button className={`w-full md:w-1/2 flex gap-1 text-base  my-[5px] p-1 md:p-0 items-center  justify-center rounded-[4px]  hover:primaryBackColor transition-all duration-300 hover:text-white addToCartColor primaryColor `} onClick={handleIntialAddToCart}><FaShoppingBasket size={20} /><span>{t("add")}</span></button>}
@@ -377,7 +383,7 @@ const VerticleProductCard = ({ product, largeImage = false }) => {
             </Link>
             <ProductDetailModal product={product} showDetailModal={showProductDetail} setShowDetailModal={setShowProductDetail} />
             <VariantsModal product={product} showVariants={showVariants} setShowVariants={setShowVariants} />
-            <SingleSellerConfirmationModal showSingleSellerModal={showSingleSellerModal} setSingleSellerModal={setSingleSellerModal} product={product} selectedVariant={selectedVariant} />
+            <SingleSellerConfirmationModal showSingleSellerModal={showSingleSellerModal} setSingleSellerModal={setSingleSellerModal} product={product} selectedVariant={product} />
         </div>
     )
 }

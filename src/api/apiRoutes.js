@@ -166,6 +166,7 @@ export const getCity = async ({ latitude, longitude }) => {
 export const getShop = async ({ latitude, longitude }) => {
   let params = { latitude: latitude, longitude: longitude };
   const response = await api.get(apiEndPoints.getShop, { params });
+  console.log("shop response :",response)
   return response.data;
 };
 
@@ -182,7 +183,11 @@ export const getCategories = async ({
     ...(id && { id }),
   };
 
-  const response = await api.get(apiEndPoints.getCategory, { params });
+  const response = await api.get(apiEndPoints.getAllCategory, { params: {
+    ...params,
+    isParent:true,
+    populate:true,
+  } });
   return response.data;
 };
 
@@ -217,8 +222,9 @@ export const getProductByFilter = async ({
       }
     }
   }
-  const response = await api.post(apiEndPoints.getProducts, formData);
-  return response.data;
+  const response = await api.get(apiEndPoints.getProducts, formData);
+  // console.log("product response ,",response.data.data)
+  return response.data.data;
 };
 
 export const getBrands = async ({ limit, offset, latitude, longitude }) => {
@@ -250,7 +256,20 @@ export const getProductById = async ({ latitude, longitude, slug, id }) => {
   if (slug) {
     formData.append("slug", slug);
   }
-  const response = await api.post(apiEndPoints.getProductById, formData);
+  const response = await api.get(`${apiEndPoints.getProductById}/${id}`, formData);
+  return response.data;
+};
+export const getProductBySlug = async ({ latitude, longitude, slug, id }) => {
+  const formData = new FormData();
+  formData.append("latitude", latitude);
+  formData.append("longitude", longitude);
+  if (id !== -1) {
+    formData.append("id", id);
+  }
+  if (slug) {
+    formData.append("slug", slug);
+  }
+  const response = await api.get(`${apiEndPoints.getProductBySlug}/${slug}`,formData);
   return response.data;
 };
 

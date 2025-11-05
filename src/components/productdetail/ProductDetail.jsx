@@ -64,7 +64,7 @@ const ProductDetail = () => {
         if (city) {
             handleFetchBySlug()
         }
-    }, [slug, city])
+    }, [slug])
 
     useEffect(() => {
         handleIsVariantAvailable()
@@ -77,12 +77,28 @@ const ProductDetail = () => {
     const handleFetchBySlug = async () => {
         setIsLoading(true)
         try {
-            const res = await api.getProductById({ slug: slug, latitude: city.latitude, longitude: city.longitude, id: -1 })
-            if (res.status == 1) {
+            const res = await api.getProductBySlug({ slug: slug, latitude: city.latitude, longitude: city.longitude, id: -1 })
+            console.log("product by slug response :", res)
+            if (res.success) {
                 setProduct(res?.data)
                 setSelectedVariant(res?.data?.variants?.[0])
-                setProductImages([res?.data?.image_url, ...res?.data?.images])
-                setSelectedImage(res?.data?.image_url)
+
+                const images = [];
+
+                if (res?.data?.thumbnail) {
+                    images.push(res?.data?.thumbnail);
+                }
+
+                if (res?.data?.images && res?.data?.images.length > 0) {
+                    images.push(...res?.data?.images);
+                }
+
+                if (images.length === 0) {
+                    images.push('/path/to/default-image.jpg');
+                }
+
+                setProductImages(images);
+                setSelectedImage(images[0]);
             } else {
                 setProductNotAvailable(true)
             }
@@ -90,7 +106,6 @@ const ProductDetail = () => {
             console.log("error", error)
         } finally {
             setIsLoading(false)
-
         }
     }
 
@@ -203,7 +218,7 @@ const ProductDetail = () => {
                     toast.error(t("max_cart_limit_error"))
                 } else {
                     const response = await api.addToCart({ product_id: product.id, product_variant_id: selectVariant.id, qty: cartProductQty ? cartProductQty.qty + quantity : quantity })
-                    if (response.status == 1) {
+                    if (response.success) {
                         if (cartProductQty) {
                             const updatedProducts = cart.cartProducts.map((cartProduct) => {
                                 if (cartProduct.product_id == product.id && cartProduct.product_variant_id == selectVariant.id) {
@@ -291,44 +306,61 @@ const ProductDetail = () => {
                         <div className='flex flex-col justify-center'>
                             <div className='grid  grid-cols-1 md:grid-cols-12 mt-2 gap-4 items-start  '>
                                 <div className='col-span-12 md:col-span-4 '>
+                                    {/* Main Image */}
                                     <div className='relative aspect-square h-auto w-full'>
-                                        <ImageWithPlaceholder src={selectedImage} alt={product?.name} className='h-full w-full aspect-square rounded-sm' />
-                                        {selectVariant?.discounted_price !== 0 && selectVariant?.discounted_price !== selectVariant?.price ? <span className="bg-[#db3d26] rounded-[4px] text-white text-[14px] font-bold left-2 leading-[16px] px-2 py-1 absolute text-center uppercase top-2">
-                                            {calculateDiscount(selectVariant?.discounted_price, selectVariant?.price).toFixed(2)}% {t("off")}
-                                        </span> : null}
+                                        {productImages.length > 0 ? (
+                                            <ImageWithPlaceholder
+                                                src={selectedImage}
+                                                alt={product?.name}
+                                                className='h-full w-full aspect-square object-cover rounded-sm'
+                                            />
+                                        ) : (
+                                            <div className='h-full w-full aspect-square rounded-sm bg-gray-200 flex items-center justify-center'>
+                                                <span className='text-gray-500'>No Image Available</span>
+                                            </div>
+                                        )}
+
+                                        {selectVariant?.discounted_price !== 0 && selectVariant?.discounted_price !== selectVariant?.price ? (
+                                            <span className="bg-[#db3d26] rounded-[4px] text-white text-[14px] font-bold left-2 leading-[16px] px-2 py-1 absolute text-center uppercase top-2">
+                                                {calculateDiscount(selectVariant?.discounted_price, selectVariant?.price).toFixed(2)}% {t("off")}
+                                            </span>
+                                        ) : null}
                                     </div>
-                                    <div dir={language?.type} className={`mt-[10px] ${language?.type == "RTL" ? "flex-row-reverse" : ""}`}>
-                                        <Swiper
-                                            spaceBetween={10}
-                                            modules={[Navigation]}
-                                            className="brand-swiper"
-                                            breakpoints={{
-                                                1200: {
-                                                    slidesPerView: 3.5,
-                                                },
-                                                1024: {
-                                                    slidesPerView: 3,
-                                                },
-                                                768: {
-                                                    slidesPerView: 3,
-                                                },
-                                                375: {
-                                                    slidesPerView: 3,
-                                                },
-                                                0: {
-                                                    slidesPerView: 2.5,
-                                                },
-                                            }}
-                                        >
-                                            {productImages?.map((image, index) => (
-                                                <SwiperSlide key={product.id} >
-                                                    <div className='h-auto relative w-full aspect-square' key={index} >
-                                                        <ImageWithPlaceholder src={image} alt={product?.name} className='h-full w-full aspect-square rounded-sm' handleOnClick={() => handleChangeCoverImage(image)} />
-                                                    </div>
-                                                </SwiperSlide>
-                                            ))}
-                                        </Swiper>
-                                    </div>
+
+                                    {/* Image Slider - Only show if we have multiple images */}
+                                    {productImages.length > 1 && (
+                                        <div dir={language?.type} className={`mt-[10px] ${language?.type == "RTL" ? "flex-row-reverse" : ""}`}>
+                                            <Swiper
+                                                spaceBetween={10}
+                                                modules={[Navigation]}
+                                                navigation={true}
+                                                slidesPerView={3}
+                                                className="product-images-swiper"
+                                                breakpoints={{
+                                                    1200: { slidesPerView: 3.5 },
+                                                    1024: { slidesPerView: 3 },
+                                                    768: { slidesPerView: 3 },
+                                                    375: { slidesPerView: 3 },
+                                                    0: { slidesPerView: 2.5 },
+                                                }}
+                                            >
+                                                {productImages.map((image, index) => (
+                                                    <SwiperSlide key={index}>
+                                                        <div
+                                                            className={`h-auto relative w-full aspect-square cursor-pointer border-2 ${selectedImage === image ? 'border-green-500' : 'border-transparent'} rounded-sm overflow-hidden`}
+                                                            onClick={() => handleChangeCoverImage(image)}
+                                                        >
+                                                            <ImageWithPlaceholder
+                                                                src={image}
+                                                                alt={`${product?.name} - ${index + 1}`}
+                                                                className='h-full w-full aspect-square object-cover'
+                                                            />
+                                                        </div>
+                                                    </SwiperSlide>
+                                                ))}
+                                            </Swiper>
+                                        </div>
+                                    )}
                                 </div>
                                 <div className='col-span-12 md:col-span-8 flex flex-col gap-6'>
                                     <div className='pb-6 border-b-2 flex flex-col gap-2'>

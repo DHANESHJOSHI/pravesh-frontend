@@ -17,7 +17,7 @@ const HomePage = () => {
     return (
         <>
             <div>
-                {setting?.setting == null ? <HomeSkeleton /> :
+                {/* {setting?.setting == null ? <HomeSkeleton /> : */}
                     <>
                         <FeatureSections />
 
@@ -26,7 +26,7 @@ const HomePage = () => {
                             <HomeOfferModal />
                         }
                     </>
-                }
+{/* }  */}
             </div>
         </>
     )

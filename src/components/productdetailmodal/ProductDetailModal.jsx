@@ -64,7 +64,7 @@ const ProductDetailModal = ({ product, showDetailModal, setShowDetailModal }) =>
             fetchProductById()
             fetchRatings()
         }
-    }, [showDetailModal, product.id, product.slug])
+    }, [showDetailModal, product._id, product.slug])
 
 
     useEffect(() => {
@@ -80,9 +80,10 @@ const ProductDetailModal = ({ product, showDetailModal, setShowDetailModal }) =>
                 id: product.id,
                 slug: product.slug
             })
+            console.log("product details by id:", res)
             setLoading(false)
             setProductImages([res?.data?.image_url, ...res?.data?.images])
-            setSelectedImage(res?.data?.image_url)
+            setSelectedImage(res?.data?.thumbnail)
             setProductDetails(res.data)
         } catch (error) {
             setLoading(true)
@@ -329,7 +330,8 @@ const ProductDetailModal = ({ product, showDetailModal, setShowDetailModal }) =>
                                 <div className='md:col-span-5 col-span-12'>
 
                                     <div className='relative aspect-square h-auto w-full'>
-                                        <ImageWithPlaceholder src={selectedImage} alt={productDetails.name} className='h-full w-full aspect-square rounded-sm' />
+                                        {/* CHANGE: Use selectedImage instead of product.thumbnail */}
+                                        <ImageWithPlaceholder src={selectedImage || product.thumbnail} alt={productDetails.name} className='h-full w-full aspect-square rounded-sm' />
                                         {selectVariant?.discounted_price !== 0 && selectVariant?.discounted_price !== selectVariant?.price ? <span className="bg-[#db3d26] rounded-[4px] text-white text-[14px] font-bold left-1 leading-[16px] px-2 py-1 absolute text-center uppercase top-1">
                                             {calculateDiscount(selectVariant?.discounted_price, selectVariant?.price).toFixed(2)}% {t("off")}
                                         </span> : null}
@@ -370,9 +372,18 @@ const ProductDetailModal = ({ product, showDetailModal, setShowDetailModal }) =>
                                 </div>
                                 <div className=' col-span-12 md:col-span-7 flex flex-col gap-6'>
                                     <div className='flex items-center gap-1'>
-                                        {selectVariant?.discounted_price !== 0 && selectVariant?.discounted_price !== selectVariant?.price ? <>
-                                            <h2 className='font-bold text-3xl '>{currency}{selectVariant?.discounted_price}</h2><h3 className='line-through font-bold text-base text-gray-500'>{currency}{selectVariant?.price}</h3>
-                                        </> : <> <h2 className='font-bold text-3xl '>{currency}{selectVariant?.price}</h2></>}
+                                        {/* FIXED: Check if selectVariant exists and has prices */}
+                                        {selectVariant && selectVariant?.discounted_price !== 0 && selectVariant?.discounted_price !== selectVariant?.price ? (
+                                            <>
+                                                <h2 className='font-bold text-3xl '>{currency}{selectVariant?.discounted_price}</h2>
+                                                <h3 className='line-through font-bold text-base text-gray-500'>{currency}{selectVariant?.price}</h3>
+                                            </>
+                                        ) : (
+                                            <>
+                                                {/* FIXED: Use selectVariant?.price or fallback to product price */}
+                                                <h2 className='font-bold text-3xl '>{currency}{selectVariant?.price || product?.finalPrice || product?.originalPrice}</h2>
+                                            </>
+                                        )}
                                     </div>
                                     <div className='flex flex-col'>
                                         <p className='font-normal text-base'>{t("chooseVariant")}</p>

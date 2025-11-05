@@ -11,7 +11,7 @@ import { useRouter } from 'next/router'
 import { clearAllFilter } from '@/redux/slices/productFilterSlice'
 import HomeSkeleton from '../homepage/HomeSkeleton'
 
-
+    
 const Homepage = () => {
     const dispatch = useDispatch();
     const router = useRouter();
@@ -43,6 +43,7 @@ const Homepage = () => {
             const latitude = parseFloat(city?.latitude)
             const longitude = parseFloat(city?.longitude)
             const response = await api.getShop({ latitude: latitude, longitude: longitude })
+            console.log("shop data :", response)
             dispatch(setShop({ data: response.data }))
             setLoading(false)
         } catch (error) {
