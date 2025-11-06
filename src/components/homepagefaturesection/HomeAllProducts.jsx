@@ -69,19 +69,18 @@ const HomeAllProducts = () => {
                     longitude: longitude,
                     filters: { limit: totalProductsPerPage, offset: localOffset }
                 });
-
                 // FIXED: Use the correct response structure
-                if (response && response.products) {
+                if (response && response.data.products) {
                     setTotalProducts(response.total)
 
                     if (isFetchMore) {
-                        setAllProducts((products) => [...products, ...response.products])
+                        setAllProducts((products) => [...products, ...response.data.products])
                     } else {
-                        setAllProducts(response.products)
+                        setAllProducts(response.data.products)
                     }
 
                     // Check if we've loaded all available products
-                    setHasMore(localOffset + response.products.length < response.total)
+                    setHasMore(localOffset + response.data.products.length < response.total)
                     setLoading(false)
                     setLoadmoreLoading(false)
                 } else {

@@ -26,7 +26,8 @@ const LogoutModal = ({ showLogout, setShowLogout }) => {
     const handleLogout = async () => {
         try {
             const response = await api.logout();
-            if (response.status == 1) {
+            console.log("handlelogout :",response)
+            if (response?.success) {
                 dispatch(clearAllFilter())
                 dispatch(logoutAuth())
                 dispatch(setJWTToken({ data: "" }))

@@ -43,7 +43,7 @@ export const login = async ({ id, fcm, type, password, phoneAuthType }) => {
   formData.append("platform", "web");
   if (type == "phone") {
     if (phoneAuthType == true) {
-      formData.append("phone_auth_type", "phone_auth_password");
+      formData.append("phone_auth_type", "phone_auth_password");  
     } else {
       formData.append("phone_auth_type", "phone_auth_otp");
     }
@@ -51,16 +51,30 @@ export const login = async ({ id, fcm, type, password, phoneAuthType }) => {
   if (type == "email" || (type == "phone" && phoneAuthType == true)) {
     formData.append("password", password);
   }
-  const response = await api.post(apiEndPoints.login, formData);
+  console.log("formData login api :",formData)
+  const response = await api.post(apiEndPoints.login, {
+    "phoneOrEmail": "khushipal1470@gmail.com",
+    "password": "12345678"
+});
   return response.data;
 };
 
 export const sendSms = async ({ mobile }) => {
-  const formData = new FormData();
-  formData.append("phone", mobile);
-  const response = await api.post(apiEndPoints.sendSms, formData);
+  const payload = {
+    phoneOrEmail: mobile
+  };
+
+  console.log("Sending OTP request:", payload);
+
+  const response = await api.post(apiEndPoints.sendSms, payload, {
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  });
+  
   return response.data;
 };
+
 
 export const verifyOTP = async ({ mobile, otp, country_code }) => {
   const formData = new FormData();
@@ -143,10 +157,12 @@ export const updateProfile = async ({
 };
 export const getUser = async () => {
   const response = await api.get(apiEndPoints.getUser);
+  console.log("here is getuser :",response.data)
   return response.data;
 };
 export const logout = async () => {
   const response = await api.post(`${apiEndPoints.logout}`);
+  console.log(response,"logout")
   return response.data;
 };
 export const deleteUser = async ({ uid = null }) => {
@@ -223,8 +239,7 @@ export const getProductByFilter = async ({
     }
   }
   const response = await api.get(apiEndPoints.getProducts, formData);
-  // console.log("product response ,",response.data.data)
-  return response.data.data;
+  return response.data;
 };
 
 export const getBrands = async ({ limit, offset, latitude, longitude }) => {
@@ -344,10 +359,12 @@ export const addToCart = async ({ product_id, product_variant_id, qty }) => {
   formData.append("product_id", product_id);
   formData.append("product_variant_id", product_variant_id);
   formData.append("qty", qty);
+  console.log("add to cart formdata :",formData)
   const response = await api.post(
     `${apiEndPoints.getCart}/${apiEndPoints.add}`,
     formData
   );
+  console.log("add to cart response :",response)
   return response.data;
 };
 export const removeFromCart = async ({

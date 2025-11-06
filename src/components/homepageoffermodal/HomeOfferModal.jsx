@@ -12,15 +12,26 @@ const HomeOfferModal = () => {
     const city = useSelector(state => state.City)
     const [isModalOpen, setIsModalOpen] = useState(false);
 
+    // DEFAULT SETTINGS - Add this if real settings are null
+    const defaultSettings = {
+        popup_enabled: "1",
+        popup_always_show_home: "0",
+        popup_image: "/default-offer.jpg", // You can replace with a default image path
+        popup_url: "#"
+    };
+
+    // Use real settings if available, otherwise use defaults
+    const currentSettings = setting?.setting || defaultSettings;
+
     // console.log("isModalOpen ->", isModalOpen)
     // console.log("City ->", city)
 
     useEffect(() => {
-        if (setting?.setting?.popup_enabled === "1" && city?.city !== null) {
-            if (setting?.setting?.popup_always_show_home === "1") {
+        if (currentSettings?.popup_enabled === "1" && city?.city !== null) {
+            if (currentSettings?.popup_always_show_home === "1") {
                 // Always show the modal on every home page visit
                 setIsModalOpen(true);
-            } else if (setting?.setting?.popup_always_show_home === "0") {
+            } else if (currentSettings?.popup_always_show_home === "0") {
                 // Show the modal only once
                 const hasPopupBeenSeen = setting?.isPopupSeen;
                 // console.log("isPopupSeen", setting?.isPopupSeen)
@@ -30,7 +41,7 @@ const HomeOfferModal = () => {
                 }
             }
         }
-    }, [setting?.setting?.popup_enabled, setting?.setting?.popup_always_show_home, city?.city]);
+    }, [currentSettings?.popup_enabled, currentSettings?.popup_always_show_home, city?.city, setting?.isPopupSeen]);
 
     const handleClose = () => {
         setIsModalOpen(false);
@@ -48,8 +59,20 @@ const HomeOfferModal = () => {
                     </DialogHeader>
                     <div className='bg-transparent'>
                         <div className='h-full w-full'>
-                            <Link href={setting?.setting?.popup_url || "#"} target="_blank" className="focus-visible:outline-none" onClick={handleClose}>
-                                <Image src={setting?.setting?.popup_image} alt='Offer image' height={0} width={0} className='h-full w-full object-contain focus-visible:outline-none' />
+                            <Link href={currentSettings?.popup_url || "#"} target="_blank" className="focus-visible:outline-none" onClick={handleClose}>
+                                {currentSettings?.popup_image ? (
+                                    <Image 
+                                        src={currentSettings.popup_image} 
+                                        alt='Offer image' 
+                                        height={0} 
+                                        width={0} 
+                                        className='h-full w-full object-contain focus-visible:outline-none' 
+                                    />
+                                ) : (
+                                    <div className="h-64 w-full bg-gray-200 flex items-center justify-center">
+                                        <span className="text-gray-500">Offer Image</span>
+                                    </div>
+                                )}
                             </Link>
                         </div>
                     </div>
@@ -59,4 +82,4 @@ const HomeOfferModal = () => {
     );
 }
 
-export default HomeOfferModal
+export default HomeOfferModal   

@@ -166,9 +166,19 @@ const ProductDetailModal = ({ product, showDetailModal, setShowDetailModal }) =>
                     setQuantity(1)
                     toast.success(t("product_added_successfully"))
                 } else {
-                    const productPrice = selectVariant.discounted_price !== 0 ? selectVariant.discounted_price : selectVariant.price
-                    const productData = { product_id: product.id, product_variant_id: selectVariant?.id, qty: quantity, productPrice: productPrice };
-                    dispatch(addtoGuestCart({ data: [...cart?.guestCart, productData] }))
+                    if (!selectVariant) {
+                        console.error('selectVariant is undefined');
+                        return; // or handle this case appropriately
+                    }
+
+                    const productPrice = selectVariant?.discounted_price !== 0
+                        ? selectVariant?.discounted_price
+                        : selectVariant?.price || product.price || 0;
+                    const productData = {
+                        product_id: product?.id,
+                        product_variant_id: selectVariant?.id || product?.variants?.[0]?.id
+                    };
+                     dispatch(addtoGuestCart({ data: [...cart?.guestCart, productData] }))
                     let products = [...cart.guestCart, productData]
                     handleCalculateTotal(products)
                     setQuantity(1)

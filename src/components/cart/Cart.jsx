@@ -17,7 +17,9 @@ const Cart = () => {
     const dispatch = useDispatch();
     const city = useSelector(state => state.City.city);
     const cart = useSelector(state => state.Cart)
+    console.log("cart", cart)
     const user = useSelector(state => state.User)
+    console.log("user : ", user)
 
 
     const [cartProductsData, setCartProductsData] = useState([])

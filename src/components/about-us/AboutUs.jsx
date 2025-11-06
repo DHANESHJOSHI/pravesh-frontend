@@ -15,6 +15,7 @@ const AboutUs = () => {
             dangerouslySetInnerHTML={{
               __html: setting?.about_us,
             }}
+            
           />
         </div>
       </div>

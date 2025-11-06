@@ -11,6 +11,17 @@ const HomePage = () => {
     const setting = useSelector(state => state.Setting)
     const language = useSelector(state => state.Language.selectedLanguage)
 
+    // DEFAULT SETTINGS - Add this if real settings are null
+    const defaultSettings = {
+        popup_enabled: "1",
+        popup_always_show_home: "0",
+        popup_image: "/default-offer.jpg",
+        popup_url: "#"
+    };
+
+    // Use real settings if available, otherwise use defaults
+    const currentSettings = setting?.setting || defaultSettings;
+
     useEffect(() => { }, [language])
 
 
@@ -22,11 +33,11 @@ const HomePage = () => {
                         <FeatureSections />
 
                         <HomeAllProducts />
-                        {setting.setting && setting?.setting?.popup_enabled === "1" &&
+                        {currentSettings?.popup_enabled === "1" &&
                             <HomeOfferModal />
                         }
                     </>
-{/* }  */}
+                {/* } */}
             </div>
         </>
     )

@@ -38,7 +38,7 @@ const Products = () => {
     const [loading, setLoading] = useState(false)
     const [isLoadMoreLoading, setIsLoadMoreLoading] = useState(false)
     const [showFilter, setShowFilter] = useState(false)
-
+    const [sizes, setSizes] = useState([])
     const total_products_per_page = 12;
 
     useEffect(() => {
@@ -68,22 +68,22 @@ const Products = () => {
             }
             // setLoading(true);
             const result = await api.getProductByFilter({ latitude: city.city.latitude, longitude: city.city.longitude, filters: filter })
-            if (result.status === 1) {
+            if (result.success) {
                 if (filter?.search) {
                     setOffset(0);
                 }
                 handlePrices(result)
                 if ((filter.category_ids || filter.brand_ids || filter.price_filter?.min_price || filter.price_filter?.max_price || filter?.search) && (offset == 0)) {
-                    setProductResult(result.data);
+                    setProductResult(result.data.products);
                 } else {
                     if (offset === 0) {
-                        setProductResult(result.data);
+                        setProductResult(result.data.products);
                     } else {
-                        setProductResult((prevProduct) => [...prevProduct, ...result.data]);
+                        setProductResult((prevProduct) => [...prevProduct, ...result.data.products]);
                     }
                 }
                 // setSizes(result.sizes);
-                settotalProducts(result.total);
+                settotalProducts(result.data.total);
                 // setShowPriceFilter(true);÷
                 setLoading(false);
                 setIsLoadMoreLoading(false);
@@ -107,15 +107,56 @@ const Products = () => {
     };
 
     const handlePrices = async (result) => {
-        if (minPrice == null && maxPrice == null && filter?.price_filter == null) {
-            setMinPrice(parseInt(result.total_min_price));
-            if (result.total_min_price === result.total_max_price) {
-                setMaxPrice(parseInt(result.total_max_price) + 100);
-                setValues([parseInt(result.total_min_price), parseInt(result.total_max_price) + 100]);
+        console.log("💰 Handling prices - Full result:", result);
+        
+        if ((minPrice == null || isNaN(minPrice)) && (maxPrice == null || isNaN(maxPrice)) && filter?.price_filter == null) {
+            // Extract prices from individual products
+            const products = result.data?.products || [];
+            
+            console.log("🔍 Products for price calculation:", products);
+            
+            if (products.length > 0) {
+                // Get all valid prices from products
+                const prices = products.map(product => {
+                    // Try different price fields that might exist
+                    const price = product.discounted_price || product.originalPrice || product.price || product.original_price || 0;
+                    return parseFloat(price) || 0;
+                }).filter(price => price > 0);
+                
+                console.log("📈 All extracted prices:", prices);
+                
+                if (prices.length > 0) {
+                    const calculatedMinPrice = Math.min(...prices);
+                    const calculatedMaxPrice = Math.max(...prices);
+                    
+                    
+                    // Ensure we have valid numbers
+                    const finalMinPrice = Math.floor(calculatedMinPrice) || 0;
+                    const finalMaxPrice = Math.ceil(calculatedMaxPrice) || 1000;
+                    
+                    setMinPrice(finalMinPrice);
+                    setMaxPrice(finalMaxPrice);
+                    setValues([finalMinPrice, finalMaxPrice]);
+                    
+                } else {
+                    // Set default values
+                    setMinPrice(0);
+                    setMaxPrice(1000);
+                    setValues([0, 1000]);
+                }
             } else {
-                setMaxPrice(parseInt(result.total_max_price));
-                setValues([parseInt(result.total_min_price), parseInt(result.total_max_price)]);
+                console.log("❌ No products found");
+                // Set default values
+                setMinPrice(0);
+                setMaxPrice(1000);
+                setValues([0, 1000]);
             }
+        } else {
+            console.log("💰 Price range already set or filter applied:", {
+                minPrice,
+                maxPrice,
+                priceFilter: filter?.price_filter
+            });
         }
     }
     const handleGridViewChange = () => {

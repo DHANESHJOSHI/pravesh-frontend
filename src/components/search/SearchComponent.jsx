@@ -39,6 +39,7 @@ const SearchComponent = ({ isMobile, mobileSearch, setMobileSearch, handleSearch
     }
 
     const handleSearchItemClick = async () => {
+        console.log("searchedCategory",filter?.searchedCategory)
         dispatch(setFilterCategory({ data: filter?.searchedCategory }))
         router.push("/products");
     }

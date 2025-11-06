@@ -11,6 +11,7 @@ import { toast } from 'react-toastify';
 const Profile = () => {
     const dispatch = useDispatch();
     const user = useSelector(state => state.User.user)
+    // console.log("user from useselector ",user)
     const authType = useSelector(state => state.User.authType)
 
     const [username, setUsername] = useState(user?.name);
@@ -51,9 +52,11 @@ const Profile = () => {
         e.preventDefault();
         try {
             const response = await api.updateProfile({ name: username, email: email, mobileNumber: mobileNumber, image: profileImage, type: authType })
-            if (response?.status == 1) {
+            if (response?.status == 200) {
                 const user = await api.getUser();
-                dispatch(setCurrentUser({ data: user?.user }))
+                console.log("user after update profile :", user)
+                console.log("user after update profile user.data :", user.data)
+                dispatch(setCurrentUser({ data: user?.user?.data }))
                 toast.success(response.message)
             } else {
                 toast.error(response.message)

@@ -59,7 +59,7 @@ const Filter = ({ setProductResult, setOffset, minPrice, maxPrice, values, setVa
         setLoading(true)
         try {
             const categories = await api.getCategories()
-            setCategories(categories.data)
+            setCategories(categories.data.categories)
         } catch (error) {
             console.log("erorr", error)
         } finally {

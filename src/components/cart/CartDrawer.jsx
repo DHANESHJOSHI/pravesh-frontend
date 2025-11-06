@@ -54,6 +54,7 @@ const CartDrawer = ({ showCart, setShowCart, setMobileActiveKey }) => {
 
 
     const fetchCart = async () => {
+        
         setLoading(true)
         try {
             const cartData = await api.getCart({ latitude: city?.latitude, longitude: city?.longitude })

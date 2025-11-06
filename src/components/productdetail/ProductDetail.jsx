@@ -80,6 +80,7 @@ const ProductDetail = () => {
             const res = await api.getProductBySlug({ slug: slug, latitude: city.latitude, longitude: city.longitude, id: -1 })
             console.log("product by slug response :", res)
             if (res.success) {
+                
                 setProduct(res?.data)
                 setSelectedVariant(res?.data?.variants?.[0])
 
@@ -178,7 +179,7 @@ const ProductDetail = () => {
 
     const handleAddToCart = async () => {
         let productQuantity = cart?.isGuest ? getProductQuantities(cart?.guestCart) : getProductQuantities(cart?.cartProducts)
-        const isExisting = cart.guestCart.find((cartProduct) => cartProduct?.product_id == product?.id && cartProduct?.product_variant_id == selectVariant?.id)
+        const isExisting = cart.guestCart.find((cartProduct) => cartProduct?.product_id == product?._id && cartProduct?.product_variant_id == selectVariant?.id)
         const productQty = productQuantity?.find(prdct => prdct?.product_id == product?.id)?.qty;
         const cartProductQty = cart.cartProducts.find(prdct => prdct?.product_id == product?.id && selectVariant?.id == prdct?.product_variant_id)
         const totalQty = productQty ? productQty + quantity : quantity
@@ -204,7 +205,7 @@ const ProductDetail = () => {
                     toast.success(t("product_added_successfully"))
                 } else {
                     const productPrice = selectVariant.discounted_price !== 0 ? selectVariant.discounted_price : selectVariant.price
-                    const productData = { product_id: product.id, product_variant_id: selectVariant?.id, qty: quantity, productPrice: productPrice };
+                    const productData = { product_id: product._id, product_variant_id: selectVariant?.id, qty: quantity, productPrice: productPrice };
                     dispatch(addtoGuestCart({ data: [...cart?.guestCart, productData] }))
                     let products = [...cart.guestCart, productData]
                     handleCalculateTotal(products)
@@ -217,11 +218,11 @@ const ProductDetail = () => {
                 if (totalQty > product?.total_allowed_quantity) {
                     toast.error(t("max_cart_limit_error"))
                 } else {
-                    const response = await api.addToCart({ product_id: product.id, product_variant_id: selectVariant.id, qty: cartProductQty ? cartProductQty.qty + quantity : quantity })
+                    const response = await api.addToCart({ product_id: product._id, product_variant_id: selectVariant.id, qty: cartProductQty ? cartProductQty.qty + quantity : quantity })
                     if (response.success) {
                         if (cartProductQty) {
                             const updatedProducts = cart.cartProducts.map((cartProduct) => {
-                                if (cartProduct.product_id == product.id && cartProduct.product_variant_id == selectVariant.id) {
+                                if (cartProduct.product_id == product._id && cartProduct.product_variant_id == selectVariant.id) {
                                     return { ...cartProduct, qty: cartProductQty ? cartProductQty.qty + quantity : quantity }
                                 } else {
                                     return cartProduct
@@ -229,7 +230,7 @@ const ProductDetail = () => {
                             })
                             dispatch(setCartProducts({ data: updatedProducts }))
                         } else {
-                            const productData = [...cart.cartProducts, { product_id: product.id, product_variant_id: selectVariant?.id, qty: quantity }];
+                            const productData = [...cart.cartProducts, { product_id: product._id, product_variant_id: selectVariant?.id, qty: quantity }];
                             dispatch(setCartProducts({ data: productData }))
                         }
 
